@@ -8,11 +8,18 @@ name: Update cask
 # releases are public, so this direction needs no credentials at all.
 #
 # Cost of that choice is a little lag. Run it by hand for an instant bump:
-#   gh workflow run update-cask -R IamSwap/homebrew-tap
+#   gh workflow run update-cask.yml -R IamSwap/homebrew-tap
+#
+# Caveat worth knowing: GitHub disables scheduled workflows in a public
+# repository after 60 days with no repository activity. This repo only gets
+# commits when a release lands, so a long gap between releases can switch the
+# schedule off exactly when it is next needed. GitHub emails first; re-enable
+# from the Actions tab, or dispatch manually as above.
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Offset from :00, which the docs call out as a high-load time.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
