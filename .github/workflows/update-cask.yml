@@ -1,0 +1,84 @@
+name: Update cask
+
+# Keeps Casks/micpin.rb pointing at the newest MicPin release.
+#
+# This deliberately runs here rather than in the micpin repo: a workflow's
+# GITHUB_TOKEN only has write access to its own repository, so bumping from
+# there would need a personal access token stored as a secret. MicPin's
+# releases are public, so this direction needs no credentials at all.
+#
+# Cost of that choice is a little lag. Run it by hand for an instant bump:
+#   gh workflow run update-cask -R IamSwap/homebrew-tap
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bump micpin if a newer release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          CASK=Casks/micpin.rb
+          REPO=IamSwap/micpin
+
+          current=$(sed -n 's/^  version "\(.*\)"/\1/p' "$CASK")
+          tag=$(gh api "repos/$REPO/releases/latest" --jq .tag_name)
+          latest="${tag#v}"
+
+          echo "cask: $current   latest release: $latest"
+
+          if [[ -z $current || -z $latest ]]; then
+              echo "::error::could not read versions (cask='$current' latest='$latest')"
+              exit 1
+          fi
+
+          if [[ $current == "$latest" ]]; then
+              echo "Already current."
+              exit 0
+          fi
+
+          url="https://github.com/$REPO/releases/download/$tag/MicPin-$latest-universal.zip"
+
+          # The release is published before its asset finishes uploading, so a
+          # missing asset means "not ready yet", not a failure. The next run
+          # picks it up.
+          if ! curl -fsIL "$url" >/dev/null; then
+              echo "::warning::$tag has no asset yet; leaving the cask alone"
+              exit 0
+          fi
+
+          curl -fsSL "$url" -o /tmp/asset.zip
+          sha=$(sha256sum /tmp/asset.zip | cut -d' ' -f1)
+          echo "sha256: $sha"
+
+          sed -i "s|^  version \".*\"|  version \"$latest\"|" "$CASK"
+          sed -i "s|^  sha256 \".*\"|  sha256 \"$sha\"|" "$CASK"
+
+          # Confirm the edit actually landed rather than trusting sed.
+          grep -q "  version \"$latest\"" "$CASK" || { echo "::error::version not written"; exit 1; }
+          grep -q "  sha256 \"$sha\"" "$CASK"     || { echo "::error::sha256 not written"; exit 1; }
+
+          if git diff --quiet; then
+              echo "::error::versions differ but the file did not change"
+              exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "micpin $latest"
+          git push
+          echo "Bumped micpin to $latest."
