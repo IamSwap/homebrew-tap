@@ -1,6 +1,6 @@
 cask "micpin" do
-  version "1.0.0"
-  sha256 "144cb55f54ddb04c9c13d0f4d2009285472a8385ecc996062b43f6a332655b47"
+  version "1.1.0"
+  sha256 "359376c626df707bf20cef867ae91632adab70b394a24f6d9a1735d895452d6c"
 
   url "https://github.com/IamSwap/micpin/releases/download/v#{version}/MicPin-#{version}-universal.zip",
       verified: "github.com/IamSwap/micpin/"
