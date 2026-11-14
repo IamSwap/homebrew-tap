@@ -2,8 +2,7 @@ cask "micpin" do
   version "1.2.0"
   sha256 "b82b2e27908d50e07380ad17e386933bbbb7e18aae2d05dfea4ec5677319443d"
 
-  url "https://github.com/IamSwap/micpin/releases/download/v#{version}/MicPin-#{version}-universal.zip",
-      verified: "github.com/IamSwap/micpin/"
+  url "https://github.com/IamSwap/micpin/releases/download/v#{version}/MicPin-#{version}-universal.zip"
   name "MicPin"
   desc "Keeps your chosen microphone as the default input"
   homepage "https://github.com/IamSwap/micpin"
